@@ -6,36 +6,53 @@ use Illuminate\Http\Request;
 use App\Models\Attendance;
 use App\Models\User;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 
 class AttendanceController extends Controller
 {
-    public function history(Request $request)
+    public function attendanceHistory()
     {
         $employees = User::all();
 
-        $query = Attendance::query();
+        $attendance = collect();
+        $presentDays = null;
+        $totalWorkingDays = null;
 
-        if ($request->employee_id) {
-            $query->where('user_id', $request->employee_id);
+        if (request('employee_id') && request('month')) {
+
+            $month = Carbon::parse(request('month'));
+
+            // ✅ Get attendance
+            $attendance = Attendance::with('user')
+                ->where('user_id', request('employee_id'))
+                ->whereMonth('date', $month->month)
+                ->whereYear('date', $month->year)
+                ->latest()
+                ->paginate(10);
+
+            // ✅ Present days
+            $presentDays = $attendance->total(); // IMPORTANT (not count())
+
+            // ✅ Total working days (Mon–Fri only)
+            $start = $month->copy()->startOfMonth();
+            $end = $month->copy()->endOfMonth();
+
+            $period = CarbonPeriod::create($start, $end);
+
+            $totalWorkingDays = 0;
+
+            foreach ($period as $date) {
+                if (!$date->isWeekend()) {
+                    $totalWorkingDays++;
+                }
+            }
         }
 
-        if ($request->month) {
-            $month = \Carbon\Carbon::parse($request->month);
-
-            $query->whereMonth('date', $month->month)
-                ->whereYear('date', $month->year);
-        }
-
-        $allRecords = (clone $query)->get();
-
-        $presentDays = $allRecords->whereNotNull('check_in_time')->count();
-
-        $attendance = $query
-            ->with('user')
-            ->orderBy('date', 'desc')
-            ->paginate(10);
-
-        
-        return view('manager.attendance.history', compact('employees', 'attendance', 'presentDays'));
+        return view('manager.attendance.history', compact(
+            'employees',
+            'attendance',
+            'presentDays',
+            'totalWorkingDays'
+        ));
     }
 }

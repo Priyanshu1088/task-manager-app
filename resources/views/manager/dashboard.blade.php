@@ -159,7 +159,7 @@
                         <!-- FIXED LINE -->
                         <div class="d-flex align-items-center gap-2">
                             <div class="card-number mb-0">
-                                {{ $attendances->count() }}
+                                {{ $attendances->count() }}/{{ $totalEmployees }}
                             </div>
                             <small class="text-light mb-0">
                                 employees checked in today

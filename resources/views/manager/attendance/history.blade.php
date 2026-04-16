@@ -35,8 +35,8 @@
 
     <!-- ✅ Push this to extreme right -->
     @if(isset($presentDays) && request('employee_id') && request('month'))
-        <div style="margin-left: auto;">
-            <div style="
+    <div style="margin-left: auto;">
+        <div style="
                 background: linear-gradient(135deg, #28a745, #20c997);
                 color: white;
                 padding: 10px 18px;
@@ -45,21 +45,21 @@
                 text-align: center;
                 box-shadow: 0 2px 6px rgba(0,0,0,0.08);
             ">
-                <div style="font-size: 12px; opacity: 0.9;">
-                    Present Days
-                </div>
-                <div style="font-size: 20px; font-weight: 600;">
-                    {{ $presentDays }}
-                </div>
+            <div style="font-size: 12px; opacity: 0.9;">
+                Present Days
+            </div>
+            <div style="font-size: 20px; font-weight: 600;">
+                {{ $presentDays }}/{{ $totalWorkingDays }}
             </div>
         </div>
+    </div>
     @endif
 
 </form>
 
 
-
 <!-- 📊 Table -->
+@if(request('employee_id') && request('month'))
 
 <div class="card p-3">
     <table class="table">
@@ -120,6 +120,15 @@
     <div class="mt-3">
         {{ $attendance->links() }}
     </div>
+
+    @else
+
+    <div class="card p-5 text-center text-muted">
+        <h5>📊 No data selected</h5>
+        <p>Select an employee and month to view attendance</p>
+    </div>
+
+    @endif
 
 
 </div>

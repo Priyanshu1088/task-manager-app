@@ -13,9 +13,9 @@
         <!-- Search -->
         <div class="input-group" style="width: 250px;">
             <span class="input-group-text bg-light">🔍</span>
-            <input 
-                type="text" 
-                name="search" 
+            <input
+                type="text"
+                name="search"
                 class="form-control"
                 placeholder="Search..."
                 value="{{ request('search') }}">
@@ -32,7 +32,7 @@
             </option>
         </select>
 
-       
+
 
     </form>
 
@@ -40,65 +40,112 @@
         View Attendance History
     </a>
 
-</div>        
+</div>
 
 <div class="card p-3">
 
     <table class="table">
-        <thead>
-            <tr>
-                <th>Employee</th>
-                <th>Check In Time</th>
-                <th>Check Out</th>
-                <th>Status</th>
-            </tr>
-        </thead>
+    
 
-        <tbody>
-            @foreach($attendances as $att)
-            <tr>
-                <td>{{ $att->user->name }}</td>
-                
-                <td>{{ \Carbon\Carbon::parse($att->check_in_time)->format('h:i A') }}</td>
+        <h5 class="text-success mb-3">
+            🟢 Present ({{ $presentEmployees->count() }})
+        </h5>
 
-                <td>
-                    @if($att->check_out_time)
+        <table class="table mb-4">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Check In Time</th>
+                    <th>Check Out</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach($presentEmployees as $emp)
+
+                @php
+                $att = $attendances[$emp->id];
+                @endphp
+
+                <tr>
+                    <td>{{ $emp->name }}</td>
+
+                    <td>{{ \Carbon\Carbon::parse($att->check_in_time)->format('h:i A') }}</td>
+
+                    <td>
+                        @if($att->check_out_time)
                         {{ \Carbon\Carbon::parse($att->check_out_time)->format('h:i A') }}
-                    @else
+                        @else
                         <span class="text-muted">--</span>
-                    @endif
-                </td>
-                <td>
-                    @if($att->check_in_time > '09:45:00')
+                        @endif
+                    </td>
+
+                    <td>
+                        @if($att->check_in_time > '09:45:00')
                         <span class="badge bg-danger">Late</span>
-                    @else
+                        @else
                         <span class="badge bg-success">On Time</span>
-                    @endif
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
+                        @endif
+                    </td>
+                </tr>
+
+                @endforeach
+            </tbody>
+        </table>
+
+        <h5 class="text-danger mb-3">
+            🔴 Absent ({{ $absentEmployees->count() }})
+        </h5>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Check In Time</th>
+                    <th>Check Out</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach($absentEmployees as $emp)
+
+                <tr>
+                    <td>{{ $emp->name }}</td>
+
+                    <td><span class="text-muted">--</span></td>
+                    <td><span class="text-muted">--</span></td>
+
+                    <td>
+                        <span class="badge bg-secondary">Didn’t check in</span>
+                    </td>
+                </tr>
+
+                @endforeach
+            </tbody>
+        </table>
     </table>
-    {{ $attendances->links() }}
+
 
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function() {
 
         const form = document.getElementById('filter-form');
         const status = document.querySelector('[name="status"]');
         const search = document.querySelector('[name="search"]');
 
         // 🔽 Dropdown change → instant submit
-        status.addEventListener('change', function () {
+        status.addEventListener('change', function() {
             form.submit();
         });
 
         // 🔍 Search → delay submit (debounce)
         let timeout = null;
 
-        search.addEventListener('keyup', function () {
+        search.addEventListener('keyup', function() {
             clearTimeout(timeout);
 
             timeout = setTimeout(() => {

@@ -155,7 +155,7 @@ Route::put('/manager/projects/{id}',
     Route::post('/employee/checkout', [EmployeeController::class, 'checkOut'])
     ->name('employee.checkout');
 
-    Route::get('/manager/attendance/history', [AttendanceController::class, 'history']);
+    Route::get('/manager/attendance/history', [AttendanceController::class, 'attendanceHistory']);
 
     Route::post('/notifications/clear', [ManagerController::class, 'clearNotifications'])
      ->name('notifications.clear');

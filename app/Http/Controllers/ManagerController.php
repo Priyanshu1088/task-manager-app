@@ -23,8 +23,8 @@ class ManagerController extends Controller
             ->latest()
             ->get();
         $unreadCount = Notification::where('is_read', false)
-        ->where('is_cleared', false)
-        ->count();
+            ->where('is_cleared', false)
+            ->count();
 
         $recentProjects = Project::latest()->take(5)->get();
 
@@ -74,9 +74,9 @@ class ManagerController extends Controller
     {
         $search = $request->search;
 
-        $employees = User::where('role','employee')
+        $employees = User::where('role', 'employee')
             ->when($search, function ($query) use ($search) {
-                return $query->where('name','like',"%$search%");
+                return $query->where('name', 'like', "%$search%");
             })
             ->get();
 
@@ -120,7 +120,6 @@ class ManagerController extends Controller
 
             return redirect()->route('manager.employees')
                 ->with('success', 'Employee updated successfully');
-
         } catch (\Exception $e) {
 
             return back()
@@ -213,7 +212,6 @@ class ManagerController extends Controller
 
             return redirect()->route('manager.projects')
                 ->with('success', 'Project updated successfully');
-
         } catch (\Exception $e) {
 
             return back()
@@ -316,8 +314,8 @@ class ManagerController extends Controller
             'name' => 'required',
             'deadline' => 'nullable|date',
             'employee_id' => 'required',
-            'description'=>'required'
-            
+            'description' => 'required'
+
         ]);
 
         try {
@@ -333,7 +331,6 @@ class ManagerController extends Controller
 
             return redirect()->route('manager.projects.show', $task->project_id)
                 ->with('success', 'Task updated successfully');
-
         } catch (\Exception $e) {
 
             return back()
@@ -353,25 +350,24 @@ class ManagerController extends Controller
     {
         $employee = User::findOrFail($id);
 
-        $tasks = Tasks::where('employee_id',$id)
-                ->with('project')
-                ->get();
+        $tasks = Tasks::where('employee_id', $id)
+            ->with('project')
+            ->get();
 
-        return view('manager.employee_tasks',compact('employee','tasks'));
+        return view('manager.employee_tasks', compact('employee', 'tasks'));
     }
 
     public function searchEmployees(Request $request)
     {
         $search = $request->search;
 
-        $employees = User::where('role','employee')
-            ->when($search,function($query) use ($search){
+        $employees = User::where('role', 'employee')
+            ->when($search, function ($query) use ($search) {
 
-                $query->where(function($q) use ($search){
-                    $q->where('name','like',"%$search%")
-                    ->orWhere('email','like',"%$search%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%")
+                        ->orWhere('email', 'like', "%$search%");
                 });
-
             })
             ->get();
 
@@ -380,7 +376,7 @@ class ManagerController extends Controller
 
     public function markRead()
     {
-        
+
         Notification::where('is_read', false)->update([
             'is_read' => true
         ]);
@@ -390,69 +386,84 @@ class ManagerController extends Controller
 
     public function clearNotifications()
     {
-        
+
         Notification::where('is_cleared', false)->update([
-        'is_cleared' => true
+            'is_cleared' => true
         ]);
 
         return back();
-
-        
-    }   
+    }
 
     public function last7Days()
     {
         $notifications = Notification::whereRaw(
-        "created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
-    )->latest()->get();
+            "created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
+        )->latest()->get();
 
-    return view('manager.notifications_history', compact('notifications'));
+        return view('manager.notifications_history', compact('notifications'));
     }
 
     public function allTasks(Request $request)
-{
-    $status = $request->status ?? 'all';
+    {
+        $status = $request->status ?? 'all';
 
-    // ✅ STEP 1: Always get latest 10 first
-    $latestTasks = Tasks::with(['project', 'employee'])
-        ->latest()
-        ->take(10)
-        ->get();
+        // ✅ STEP 1: Always get latest 10 first
+        $latestTasks = Tasks::with(['project', 'employee'])
+            ->latest()
+            ->take(10)
+            ->get();
 
-    // ✅ STEP 2: Filter ONLY from these 10
-    if ($status == 'all') {
-        $tasks = $latestTasks;
-    } else {
-        $tasks = $latestTasks->where('status', $status);
+        // ✅ STEP 2: Filter ONLY from these 10
+        if ($status == 'all') {
+            $tasks = $latestTasks;
+        } else {
+            $tasks = $latestTasks->where('status', $status);
+        }
+
+        // ✅ STEP 3: Counts ALSO from same 10
+        $totalTasks = $latestTasks->count();
+        $pendingTasks = $latestTasks->where('status', 'Pending')->count();
+        $inProgressTasks = $latestTasks->where('status', 'In Progress')->count();
+        $completedTasks = $latestTasks->where('status', 'Completed')->count();
+
+        return view('manager.tasks', compact(
+            'tasks',
+            'totalTasks',
+            'pendingTasks',
+            'inProgressTasks',
+            'completedTasks'
+        ));
     }
 
-    // ✅ STEP 3: Counts ALSO from same 10
-    $totalTasks = $latestTasks->count();
-    $pendingTasks = $latestTasks->where('status', 'Pending')->count();
-    $inProgressTasks = $latestTasks->where('status', 'In Progress')->count();
-    $completedTasks = $latestTasks->where('status', 'Completed')->count();
-
-    return view('manager.tasks', compact(
-        'tasks',
-        'totalTasks',
-        'pendingTasks',
-        'inProgressTasks',
-        'completedTasks'
-    ));
-}
 
     public function todayAttendance()
     {
-        $attendances = Attendance::with('user')
-            ->whereDate('date', now())
-            ->get();
+        $attendances = Attendance::whereDate('date', now())
+            ->get()
+            ->keyBy('user_id');
 
-        return view('manager.attendance', compact('attendances'));
+        $employees = User::all();
+
+        // Split into groups
+        $presentEmployees = $employees->filter(function ($emp) use ($attendances) {
+            return isset($attendances[$emp->id]);
+        });
+
+        $absentEmployees = $employees->filter(function ($emp) use ($attendances) {
+            return !isset($attendances[$emp->id]);
+        });
+
+        return view('manager.attendance', compact(
+            'presentEmployees',
+            'absentEmployees',
+            'attendances'
+        ));
     }
+
 
     public function attendance()
     {
-       $query = Attendance::with('user')
+        $query = Attendance::with('user')
             ->whereDate('date', now());
 
         if (request('search')) {
@@ -469,10 +480,23 @@ class ManagerController extends Controller
             $query->whereTime('check_in_time', '<=', '12:00:00');
         }
 
-        $attendances = $query->latest()->paginate(10);
+        $attendances = $query->get()->keyBy('user_id');
 
-        return view('manager.attendance', compact('attendances'));
+        $employees = User::all();
+
+        // Split into groups
+        $presentEmployees = $employees->filter(function ($emp) use ($attendances) {
+            return isset($attendances[$emp->id]);
+        });
+
+        $absentEmployees = $employees->filter(function ($emp) use ($attendances) {
+            return !isset($attendances[$emp->id]);
+        });
+
+        return view('manager.attendance', compact(
+            'presentEmployees',
+            'absentEmployees',
+            'attendances'
+        ));
     }
-
-    
 }
